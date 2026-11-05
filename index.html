@@ -395,10 +395,11 @@ const WS={
   dos:[{id:'dados',t:'Dados iniciais',f:['os','e1','e2','b04','c02','c05','c08','d02','d06','cor']},{id:'ei',t:'Erro inicial',f:['p1','s1','p2','s2']},{id:'vol',t:'Volumétrico',f:['tv1','tv2','tv3']},{id:'belt',t:'Input Belt',f:['d06n']},{id:'tara',t:'Tara',f:['k1','k2']},{id:'chk',t:'Check weight',f:['d02n']},{id:'ef',t:'Erro final',f:['p3','s3','p4','s4']},{id:'fim',t:'Encerramento',f:[]}]};
 /* Novo procedimento: coleta igual + velocidade nominal; erro inicial pelo peso totalizado no Check weight */
 const NPK='.np';
-const WSN={};['flu','dos'].forEach(tp=>{const f=WS[tp][0].f.slice();f.splice(f.indexOf('b04')+1,0,'vn');WSN[tp]=[{id:'dados',t:'Coleta de dados',f},{id:'nei',t:'Erro inicial',f:['tot']},{id:'fim',t:'Encerramento',f:[]}]});
+const WSN={};['flu','dos'].forEach(tp=>{const f=WS[tp][0].f.slice();f.splice(f.indexOf('b04')+1,0,'vn');WSN[tp]=[{id:'dados',t:'Coleta de dados',f},{id:'nei',t:'Erro inicial',f:['tot']},{id:'nvol',t:'Tempo de volta',f:['tv1','tv2','tv3']},{id:'fim',t:'Encerramento',f:[]}]});
 const wsL=w=>w.pr==='np'?WSN[w.tp]:WS[w.tp];
 const WI={
   dados:{flu:'Informe os parâmetros atuais do módulo (coleta de parâmetros) e o tamanho da correia. Se não souber o tamanho, toque em “Calcular tamanho” para medir a correia agora.',dos:'Informe os parâmetros atuais do módulo (coleta de parâmetros) e o tamanho da correia, medido de ponta a ponta.'},
+  nvol:'Em VOLUMÉTRICO e SEM OS PESOS. Mantenha o pedido da capacidade nominal e afira 3 tempos de volta da correia. O app usa a média.',
   nei:'COM OS PESOS PADRÃO e a balança em VOLUMÉTRICO. Faça o pedido da capacidade nominal e realize o Check weight. Informe o peso totalizado. Não é preciso aceitar nem atualizar o fator de correção.',
   ei:{flu:'COM OS PESOS. Zere o totalizador da balança e cronometre o tempo até o totalizador indicar o valor em destaque abaixo. Informe o tempo encontrado.',dos:'COM OS PESOS. Afira o tempo de volta e informe o pedido e o tempo de volta de cada linha.'},
   vol:{flu:'Passe a balança para volumétrico e habilite o teclado. Aferir o tempo de volta e informe abaixo.',dos:'Passe a balança para volumétrico e habilite o teclado, fazer o pedido meio de faixa. Aferir o tempo de volta e informe abaixo'},
@@ -418,7 +419,7 @@ function calc(w){
     o.f=[1,2,3,4].map(i=>fe(w['s'+i]));o.e=[1,2,3,4].map(i=>er(w['p'+i],w['s'+i]));
     o.ei=(o.e[0]+o.e[1])/2;o.ef=(o.e[2]+o.e[3])/2;
   }else{o.ei=(pn(w.t1)/T-1)*100;o.ef=(pn(w.t2)/T-1)*100}
-  if(w.pr==='np'){o.tc=pn(w.vn)*pn(w.c08)*pn(w.c02)/pn(w.c05);o.ei=(pn(w.tot)-o.tc)/o.tc*100;o.ef=o.ei}
+  if(w.pr==='np'){o.tc=pn(w.vn)*pn(w.c08)*pn(w.c02)/pn(w.c05);o.ei=(pn(w.tot)-o.tc)/o.tc*100;o.ef=o.ei;o.vc=o.cor/o.tv;o.b04nn=pn(w.b04)*pn(w.vn)/o.vc}
   return o;
 }
 const SWK=['t1','t2','s1','s2','s3','s4','ctd','ctv'];
@@ -479,11 +480,14 @@ function wLive(){
     if(ce)ce.innerHTML=isFinite(c.ct)&&c.ct>0?R(`<span>Regra de três: ${fmt(pn(w.ctm))} m em ${fmt(pn(w.ctd),2)} s → ? m em ${fmt(pn(w.ctv),2)} s</span><span>Tamanho = ${fmt(pn(w.ctm))} × ${fmt(pn(w.ctv),2)} ÷ ${fmt(pn(w.ctd),2)}</span><span>Tamanho da correia: <b class='bn'>${fmt(c.ct,3)} m</b></span>`):`<p class='small mut'>Preencha a distância e os dois tempos para calcular.</p>`;
     if(cu)cu.disabled=!(isFinite(c.ct)&&c.ct>0);
   }
+  else if(id==='nvol'){
+    h=c.tvs.length===3?R(`<span>Tempo de volta (média de 3): <b>${fmt(c.tv,3)} s</b></span><span>Velocidade calculada = tamanho da correia ÷ tempo de volta</span><span>${fmt(c.cor,4)} ÷ ${fmt(c.tv,3)} = <b>${fmt(c.vc,4)} m/s</b></span>`)+R(`<span>Novo B-04 = B-04 antiga × velocidade nominal ÷ velocidade calculada</span><span>${fmt(pn(w.b04),4)} × ${fmt(pn(w.vn),4)} ÷ ${fmt(c.vc,4)} = <b class='bn'>${fmt(c.b04nn,4)} pulsos/m</b></span>`):R(`<span>Tempos registrados: <b>${c.tvs.length} de 3</b></span>`);
+  }
   else if(id==='nei'){
     h=R(`<span>Total calculado = (velocidade nominal × peso padrão × tempo de volta) ÷ comprimento da mesa</span><span>(${fmt(pn(w.vn),4)} × ${fmt(pn(w.c08))} × ${fmt(pn(w.c02))}) ÷ ${fmt(pn(w.c05))} = <b class='bn'>${fmt(c.tc,3)} kg</b></span>`);
     if(pn(w.tot)>0)h+=R(`<span>Erro = (total inserido − total calculado) ÷ total calculado × 100</span><span>Erro inicial: <b>${fmt(c.ei)} %</b></span>`);
     const ok=pn(w.tot)>0&&dentro(w.tp,c.ei),nb=$('#wBody [data-wn]');if(nb)nb.textContent=ok?'Ir para o encerramento':'Próximo';
-    if(pn(w.tot)>0&&isFinite(c.ei))h+=ok?`<div class='av g'><b>Erro inicial dentro da tolerância (${tolTxt(w.tp)}).</b><span>Não é necessário calibrar. Toque em “Ir para o encerramento” para emitir o relatório.</span></div>`:`<div class='av r'><b>Erro inicial fora da tolerância (${tolTxt(w.tp)}).</b><span>Segue para a calibração. As etapas de calibração deste procedimento ainda serão adicionadas ao app.</span></div>`;
+    if(pn(w.tot)>0&&isFinite(c.ei))h+=ok?`<div class='av g'><b>Erro inicial dentro da tolerância (${tolTxt(w.tp)}).</b><span>Não é necessário calibrar. Toque em “Ir para o encerramento” para emitir o relatório.</span></div>`:`<div class='av r'><b>Erro inicial fora da tolerância (${tolTxt(w.tp)}).</b><span>Siga com a calibração.</span></div>`;
   }
   else if(id==='ei'){
     h=dos?rows([0,1])+R(`<span>Erro inicial (média): <b>${fmt(c.ei)} %</b></span>`):ex+R(`<span>Erro inicial: <b>${fmt(c.ei)} %</b></span>`);
@@ -523,7 +527,7 @@ function wRender(){
   let h=`<div class='sh'><div><h2>${esc(s.nome)}</h2><p class='stp'>Balança ${w.tp==='dos'?'dosadora':'de fluxo'}${w.pr==='np'?' · Novo procedimento':''} · ${st.t} · etapa ${i+1} de ${L.length}</p></div><button type='button' class='x' data-wx aria-label='Fechar'>×</button></div>`;
   if(id!=='fim'){
     const t=WI[id];
-    h+=`<p>${typeof t==='string'?t:t[w.tp]}</p>${id==='chk'?`<p class='hint'>Peso padrão: ${esc(w.c08)} kg. Lembre-se de colocar o peso na balança antes do check weight.</p>`:''}<div id='wLive' style='display:flex;flex-direction:column;gap:8px'></div><div class='f'>${id==='dados'?`<label>Data da calibração<input type='date' data-k='data' value='${esc(w.data)}'></label>`:''}${id==='vol'?'':st.f.map(inp).join('')}</div>${id==='vol'?volCard():''}`;
+    h+=`<p>${typeof t==='string'?t:t[w.tp]}</p>${id==='chk'?`<p class='hint'>Peso padrão: ${esc(w.c08)} kg. Lembre-se de colocar o peso na balança antes do check weight.</p>`:''}<div id='wLive' style='display:flex;flex-direction:column;gap:8px'></div><div class='f'>${id==='dados'?`<label>Data da calibração<input type='date' data-k='data' value='${esc(w.data)}'></label>`:''}${id==='vol'||id==='nvol'?'':st.f.map(inp).join('')}</div>${id==='vol'||id==='nvol'?volCard():''}`;
   }else h+=wSum();
   h+=`<p class='small' id='wErr' style='color:var(--r)'></p><div class='wb'>${i>0?`<button class='btn' data-wb>Voltar</button>`:''}<button class='btn pri' data-wn>${id==='fim'?'Finalizar e salvar':'Próximo'}</button></div>`;
   $('#wBody').innerHTML=h;wLive();swPaint();
@@ -538,8 +542,9 @@ function wNext(){
   }
   if(id==='nei'){
     if(dentro(w.tp,calc(w).ei)){w.pulo=1;w.step=L.findIndex(x=>x.id==='fim');wSave();wRender();$('#dWiz').scrollTop=0;return}
-    $('#wErr').textContent='Erro inicial fora da tolerância. As etapas de calibração do novo procedimento ainda serão adicionadas ao app.';return;
+    delete w.pulo;
   }
+  if(id==='nvol'){w.tv=String(+calc(w).tv.toFixed(3)).replace('.',',');wSave();$('#wErr').textContent='As próximas etapas do novo procedimento ainda serão adicionadas ao app.';return}
   if(id==='ei'){
     if(dentro(w.tp,calc(w).ei)){w.pulo=1;w.step=L.findIndex(x=>x.id==='fim');wSave();wRender();$('#dWiz').scrollTop=0;return}
     delete w.pulo;
