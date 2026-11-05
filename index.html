@@ -64,6 +64,8 @@ body:not([data-role="admin"]) .adm{display:none!important}
 .sync i{flex:none;width:9px;height:9px;border-radius:50%;background:var(--g)}
 .sync.pend i{background:var(--y)}.sync.off i{background:var(--r)}
 .fl{display:flex;flex-direction:column;gap:3px;font-size:14px;color:var(--mut)}
+.inst{display:flex;align-items:center;gap:10px;background:var(--card,var(--in));border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:0 0 12px}.inst>div{flex:1;display:flex;flex-direction:column;min-width:0}.inst img{border-radius:9px;flex:none}.inst .btn{flex:none}.inst .x{flex:none}
+#instTxt ol{margin:0 0 12px;padding-left:20px;display:flex;flex-direction:column;gap:8px}
 .ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}.ul li{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--in);border:1px solid var(--line);border-radius:10px;padding:8px 10px}.ul li.off{opacity:.55}
 .me{margin-top:22px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;align-items:center}
 .me h2{margin-bottom:2px}
@@ -123,6 +125,7 @@ ul.h li:first-child{border-top:0}
     <div><button class="lnk" id="bBack" hidden>← Início</button><h1 id="ttl">Calibração de balanças</h1><p class="mut" id="sub">Escolha o tipo de balança</p></div>
     <button class="btn pri adm" id="bNew" hidden>Nova balança</button>
   </header>
+  <div id="inst" class="inst" hidden><img src="icon-192.png" alt="" width="40" height="40"><div><b>Instale o app</b><span class="small mut">Abre direto da tela inicial, em tela cheia.</span></div><button class="btn pri" type="button" data-inst>Instalar</button><button class="x" type="button" data-instx aria-label="Agora não">×</button></div>
   <button id="sync" class="sync" type="button" hidden></button>
   <div id="note" class="note" hidden></div>
   <section id="home" class="tiles"></section>
@@ -146,8 +149,15 @@ ul.h li:first-child{border-top:0}
     <details id="cfgUrl"><summary class="small mut">Endereço do servidor</summary><label class="fl" style="margin-top:6px">Endereço do servidor (URL)<input name="url" inputmode="url" autocomplete="off" required></label></details>
     <p class="small" id="cfgMsg"></p>
     <button class="btn pri" type="submit">Entrar</button>
+    <button class="btn" type="button" data-inst hidden>Instalar o app neste aparelho</button>
   </form>
 </dialog>
+
+<dialog id="dInst"><div class="sheet">
+  <div class="sh"><h2>Instalar o app</h2><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+  <div id="instTxt"></div>
+  <button class="btn pri" type="button" data-close>Entendi</button>
+</div></dialog>
 
 <dialog id="dAcc"><div class="sheet" id="accBody"></div></dialog>
 
@@ -1000,6 +1010,37 @@ setInterval(render,36e5);
   $('#sync').onclick=()=>sync();
 })();
 if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0)navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+/* ===== Botão "Instalar o app" (só quando aberto pelo navegador) ===== */
+(function(){
+  const app=()=>matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
+  const ua=navigator.userAgent,ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
+  const ADI='calib.inst.adiado';let ev=null;
+  const adiado=()=>{try{return Date.now()<+localStorage.getItem(ADI)}catch(e){return false}};
+  function show(on){
+    const b=$('#inst');if(b)b.hidden=!on||adiado();
+    document.querySelectorAll('#fCfg [data-inst]').forEach(x=>x.hidden=!on);
+  }
+  function passos(){
+    const t=$('#instTxt');
+    if(ios)t.innerHTML=`<ol><li>Abra este endereço no <b>Safari</b> (no iPhone, só o Safari instala apps).</li><li>Toque em <b>Compartilhar</b> (o quadrado com a seta para cima), na barra de baixo ou no topo da tela.</li><li>Role a lista e toque em <b>Adicionar à Tela de Início</b>.</li><li>Toque em <b>Adicionar</b>. O ícone do app aparece na tela inicial.</li></ol>`;
+    else t.innerHTML=`<ol><li>Abra o <b>menu do navegador</b> (os três pontinhos ⋮ no canto da tela).</li><li>Toque em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.</li><li>Confirme. O ícone do app aparece na tela inicial.</li></ol><p class="small mut">Se a opção não aparecer, abra este endereço no Google Chrome.</p>`;
+    $('#dInst').showModal();
+  }
+  async function instalar(){
+    if(ev){const e=ev;ev=null;e.prompt();try{const r=await e.userChoice;if(r&&r.outcome==='accepted')show(false)}catch(x){}return}
+    passos();
+  }
+  document.addEventListener('click',e=>{
+    if(e.target.closest('[data-inst]')){instalar();return}
+    if(e.target.closest('[data-instx]')){try{localStorage.setItem(ADI,String(Date.now()+7*864e5))}catch(x){}$('#inst').hidden=true}
+  });
+  if(app())return;
+  addEventListener('beforeinstallprompt',e=>{e.preventDefault();ev=e;show(true)});
+  addEventListener('appinstalled',()=>{ev=null;show(false);note('App instalado. Abra pelo ícone na tela inicial.')});
+  /* iPhone e navegadores sem instalação automática: o botão mostra o passo a passo */
+  if(ios)show(true);else setTimeout(()=>{if(!app()&&!ev)show(true)},2500);
+})();
 </script>
 </body>
 </html>
