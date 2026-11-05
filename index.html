@@ -388,9 +388,9 @@ const TXT=['os','e1','e2','k1','k2','data'];
 const CK=['Balança voltada para gravimétrico','Teclado desabilitado','Pesos guardados','Totalização restaurada','Balança liberada para operação'];
 const WS={
   flu:[{id:'dados',t:'Dados iniciais',f:['os','e1','e2','b04','c02','c05','c08','d02','d06','cor']},{id:'ei',t:'Erro inicial',f:['t1']},{id:'vol',t:'Volumétrico',f:['tv1','tv2','tv3']},{id:'belt',t:'Input Belt',f:['d06n']},{id:'tara',t:'Tara',f:['k1','k2']},{id:'chk',t:'Check weight',f:['d02n']},{id:'ef',t:'Erro final',f:['t2']},{id:'fim',t:'Encerramento',f:[]}],
-  dos:[{id:'dados',t:'Dados iniciais',f:['os','e1','e2','b04','c02','c05','c08','d02','d06']},{id:'ei',t:'Erro inicial',f:['p1','s1','p2','s2']},{id:'vol',t:'Volumétrico',f:['tv1','tv2','tv3']},{id:'belt',t:'Input Belt',f:['d06n']},{id:'tara',t:'Tara',f:['k1','k2']},{id:'chk',t:'Check weight',f:['d02n']},{id:'ef',t:'Erro final',f:['p3','s3','p4','s4']},{id:'fim',t:'Encerramento',f:[]}]};
+  dos:[{id:'dados',t:'Dados iniciais',f:['os','e1','e2','b04','c02','c05','c08','d02','d06','cor']},{id:'ei',t:'Erro inicial',f:['p1','s1','p2','s2']},{id:'vol',t:'Volumétrico',f:['tv1','tv2','tv3']},{id:'belt',t:'Input Belt',f:['d06n']},{id:'tara',t:'Tara',f:['k1','k2']},{id:'chk',t:'Check weight',f:['d02n']},{id:'ef',t:'Erro final',f:['p3','s3','p4','s4']},{id:'fim',t:'Encerramento',f:[]}]};
 const WI={
-  dados:{flu:'Informe os parâmetros atuais do módulo (coleta de parâmetros) e o tamanho da correia. Se não souber o tamanho, toque em “Calcular tamanho” para medir a correia agora.',dos:'Informe os parâmetros atuais do módulo (coleta de parâmetros).'},
+  dados:{flu:'Informe os parâmetros atuais do módulo (coleta de parâmetros) e o tamanho da correia. Se não souber o tamanho, toque em “Calcular tamanho” para medir a correia agora.',dos:'Informe os parâmetros atuais do módulo (coleta de parâmetros) e o tamanho da correia, medido de ponta a ponta.'},
   ei:{flu:'COM OS PESOS. Zere o totalizador da balança e cronometre o tempo até o totalizador indicar o valor em destaque abaixo. Informe o tempo encontrado.',dos:'COM OS PESOS. Afira o tempo de volta e informe o pedido e o tempo de volta de cada linha.'},
   vol:{flu:'Passe a balança para volumétrico e habilite o teclado. Aferir o tempo de volta e informe abaixo.',dos:'Passe a balança para volumétrico e habilite o teclado, fazer o pedido meio de faixa. Aferir o tempo de volta e informe abaixo'},
   belt:{flu:'Faça o Input Belt no módulo e informe o novo valor de D-06 (pulsos por volta). Digite no módulo o novo B-04 calculado abaixo.',dos:'SEM OS PESOS. Faça o Input Belt no módulo e informe o novo valor de D-06 (pulsos por volta). Digite no módulo o novo B-04 calculado abaixo.'},
@@ -401,7 +401,7 @@ const WI={
 const okf=k=>TXT.includes(k)?String(w[k]||'').trim()!=='':pn(w[k])>0;
 let w=null,wsid=null,wDone=false,wLast=null;
 function calc(w){
-  const corM=pn(w.d06)/pn(w.b04),cor=w.tp==='flu'&&pn(w.cor)>0?pn(w.cor):corM,ct=pn(w.ctm)*pn(w.ctv)/pn(w.ctd),vel=cor/pn(w.c02),Q=vel*3.6*pn(w.c08)/pn(w.c05),T=2*pn(w.c02),tons=Q*T/3600;
+  const corM=pn(w.d06)/pn(w.b04),cor=pn(w.cor)>0?pn(w.cor):corM,ct=pn(w.ctm)*pn(w.ctv)/pn(w.ctd),vel=cor/pn(w.c02),Q=vel*3.6*pn(w.c08)/pn(w.c05),T=2*pn(w.c02),tons=Q*T/3600;
   const fe=t=>cor/pn(t)*3.6*pn(w.c08)/pn(w.c05),er=(p,s)=>(fe(s)/pn(p)-1)*100;
   const tvs=[w.tv1,w.tv2,w.tv3].map(pn).filter(v=>v>0),tv=tvs.length===3?(tvs[0]+tvs[1]+tvs[2])/3:pn(w.tv);
   const o={cor,corM,ct,dc:(cor/corM-1)*100,vel,Q,T,tons,tv,tvs,b04n:pn(w.d06n)/cor,dd:(pn(w.d02n)-pn(w.d02))/pn(w.d02)*100,dv:(tv-pn(w.c02))/pn(w.c02)*100};
@@ -463,8 +463,7 @@ function wLive(){
   const rows=a=>R(a.map(i=>`<span>Linha ${i%2+1}: fluxo encontrado <b>${fmt(c.f[i])} t/h</b> · erro <b>${fmt(c.e[i])} %</b></span>`).join(''));
   let h='';
   if(id==='dados'){
-    h=dos?R(`<span>Comprimento da correia = D-06 ÷ B-04: <b>${fmt(c.cor,4)} m</b></span><span>Velocidade = correia ÷ tempo de volta: <b>${fmt(c.vel,4)} m/s</b></span>`)
-      :R(`<span>Comprimento pelo módulo = D-06 ÷ B-04: <b>${fmt(c.corM,4)} m</b></span>${pn(w.cor)>0?`<span>Tamanho da correia informado: <b>${fmt(c.cor,4)} m</b> (${fmt(c.dc)} % em relação ao módulo)</span>`:''}<span>Velocidade = tamanho da correia ÷ tempo de volta: <b>${fmt(c.vel,4)} m/s</b></span>`);
+    h=R(`<span>Velocidade = tamanho da correia ÷ tempo de volta: <b>${fmt(pn(w.cor)>0?c.vel:NaN,4)} m/s</b></span>`);
     const ce=$('#wCt'),cu=$('#wBody [data-ctuse]');
     if(ce)ce.innerHTML=isFinite(c.ct)&&c.ct>0?R(`<span>Regra de três: ${fmt(pn(w.ctm))} m em ${fmt(pn(w.ctd),2)} s → ? m em ${fmt(pn(w.ctv),2)} s</span><span>Tamanho = ${fmt(pn(w.ctm))} × ${fmt(pn(w.ctv),2)} ÷ ${fmt(pn(w.ctd),2)}</span><span>Tamanho da correia: <b class='bn'>${fmt(c.ct,3)} m</b></span>`):`<p class='small mut'>Preencha a distância e os dois tempos para calcular.</p>`;
     if(cu)cu.disabled=!(isFinite(c.ct)&&c.ct>0);
@@ -588,7 +587,7 @@ function buildPdf(s,c){
     else S('Erro final dentro do limite de tolerância.',1);
   }
   if(full){
-  H('Coleta de parâmetros');R('B-04 - Pulsos por metro',r.b04);R('C-02 - Tempo de volta (s)',r.c02);R('C-05 - Comprimento da mesa (m)',r.c05);R('C-08 - Peso padrão (kg)',r.c08);R('D-02 - Fator de correção',r.d02);R('D-06 - Pulsos por volta',r.d06);if(r.tp==='flu'&&pn(r.cor)>0){R('Tamanho da correia'+(r.ctu?' (medido)':' (informado)'),fmt(pn(r.cor),4)+' m');R('Comprimento pelo módulo (D-06 / B-04)',fmt(x.corM!=null?x.corM:pn(r.d06)/pn(r.b04),4)+' m');if(r.ctu&&pn(r.ctm)>0){R('Medição - distância marcada',fmt(pn(r.ctm))+' m em '+r.ctd+' s');R('Medição - uma volta completa',r.ctv+' s')}}else R('Tamanho da correia (D-06 / B-04)',fmt(x.cor!=null?x.cor:pn(r.cor),4)+' m');
+  H('Coleta de parâmetros');R('B-04 - Pulsos por metro',r.b04);R('C-02 - Tempo de volta (s)',r.c02);R('C-05 - Comprimento da mesa (m)',r.c05);R('C-08 - Peso padrão (kg)',r.c08);R('D-02 - Fator de correção',r.d02);R('D-06 - Pulsos por volta',r.d06);if(pn(r.cor)>0){R('Tamanho da correia'+(r.tp==='flu'?(r.ctu?' (medido)':' (informado)'):''),fmt(pn(r.cor),4)+' m');if(r.ctu&&pn(r.ctm)>0){R('Medição - distância marcada',fmt(pn(r.ctm))+' m em '+r.ctd+' s');R('Medição - uma volta completa',r.ctv+' s')}}else R('Tamanho da correia (D-06 / B-04)',fmt(x.cor!=null?x.cor:pn(r.cor),4)+' m');
   H('Cálculo');R('Velocidade (correia / tempo de volta)',fmt(x.vel!=null?x.vel:pn(r.vel),4)+' m/s');if(!dos)R('Fluxo calculado (1 hora)',fmt(x.Q)+' t/h');
   if(!dos){R('Tempo de 2 voltas',fmt(x.T)+' s');R('Totalização esperada',fmt(x.tons,4)+' t')}
   H('Erro inicial');
