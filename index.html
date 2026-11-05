@@ -64,6 +64,7 @@ body:not([data-role="admin"]) .adm{display:none!important}
 .sync i{flex:none;width:9px;height:9px;border-radius:50%;background:var(--g)}
 .sync.pend i{background:var(--y)}.sync.off i{background:var(--r)}
 .fl{display:flex;flex-direction:column;gap:3px;font-size:14px;color:var(--mut)}
+.ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}.ul li{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--in);border:1px solid var(--line);border-radius:10px;padding:8px 10px}.ul li.off{opacity:.55}
 .me{margin-top:22px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;align-items:center}
 .me h2{margin-bottom:2px}
 .mact{display:flex;gap:10px;flex-wrap:wrap}
@@ -138,16 +139,42 @@ ul.h li:first-child{border-top:0}
 
 <dialog id="dCfg">
   <form id="fCfg" class="sheet">
-    <h2>Conectar ao servidor</h2>
-    <p class="mut small">Abra o link de acesso que o inspetor enviou, ou preencha abaixo.</p>
-    <label class="fl">Endereço do servidor (URL)<input name="url" inputmode="url" autocomplete="off" required></label>
-    <label class="fl">Código de acesso<input name="code" type="password" autocomplete="off" required></label>
+    <h2>Entrar</h2>
+    <p class="mut small">Use o login e a senha cadastrados pelo administrador.</p>
+    <label class="fl">Login<input name="login" autocomplete="username" autocapitalize="off" spellcheck="false" required></label>
+    <label class="fl">Senha<input name="senha" type="password" autocomplete="current-password" required></label>
+    <details id="cfgUrl"><summary class="small mut">Endereço do servidor</summary><label class="fl" style="margin-top:6px">Endereço do servidor (URL)<input name="url" inputmode="url" autocomplete="off" required></label></details>
     <p class="small" id="cfgMsg"></p>
-    <button class="btn pri" type="submit">Conectar</button>
+    <button class="btn pri" type="submit">Entrar</button>
   </form>
 </dialog>
 
 <dialog id="dAcc"><div class="sheet" id="accBody"></div></dialog>
+
+<dialog id="dUser">
+  <form id="fUser" class="sheet">
+    <div class="sh"><h2 id="hUser">Executante</h2><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <label class="fl">Nome<input name="nome" maxlength="60" required></label>
+    <label class="fl">Login<input name="login" maxlength="40" autocapitalize="off" spellcheck="false" autocomplete="off" required></label>
+    <div class="f"><label>Matrícula<input name="matricula" maxlength="20" autocomplete="off"></label><label>Telefone<input name="telefone" maxlength="20" inputmode="tel" autocomplete="off"></label></div>
+    <label class="fl">Perfil<select name="perfil"><option value="exec">Executante</option><option value="admin">Administrador</option></select></label>
+    <label class="fl"><span id="lSenha">Senha</span><input name="senha" type="password" autocomplete="new-password"></label>
+    <label class="chk"><input type="checkbox" name="ativo" checked>Acesso ativo</label>
+    <p class="small" id="userMsg" style="color:var(--r)"></p>
+    <button class="btn pri" type="submit">Salvar</button>
+  </form>
+</dialog>
+
+<dialog id="dSenha">
+  <form id="fSenha" class="sheet">
+    <div class="sh"><h2>Trocar minha senha</h2><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
+    <label class="fl">Senha atual<input name="atual" type="password" autocomplete="current-password" required></label>
+    <label class="fl">Nova senha (mínimo 4 caracteres)<input name="nova" type="password" autocomplete="new-password" minlength="4" required></label>
+    <label class="fl">Repita a nova senha<input name="nova2" type="password" autocomplete="new-password" minlength="4" required></label>
+    <p class="small" id="senhaMsg" style="color:var(--r)"></p>
+    <button class="btn pri" type="submit">Salvar nova senha</button>
+  </form>
+</dialog>
 
 <dialog id="dPw">
   <form id="fPw" class="sheet">
@@ -331,7 +358,7 @@ function render(){
 
 $('#chips').onclick=e=>{const b=e.target.closest('[data-f]');if(b){filter=b.dataset.f;renderList()}};
 const openScale=id=>{
-  openId=id;$('#calAv').innerHTML='';const f=$('#fCal');f.reset();f.data.value=iso(new Date());['pm','po'].forEach(k=>delete $('#'+k).dataset.dirty);
+  openId=id;$('#calAv').innerHTML='';const f=$('#fCal');f.reset();f.data.value=iso(new Date());if(eu())f.e1.value=eu().nome;['pm','po'].forEach(k=>delete $('#'+k).dataset.dirty);
   $('#dSc').showModal();renderDetail();$('#dSc').scrollTop=0;
 };
 $('#list').onclick=e=>{const c=e.target.closest('.card');if(c)openScale(c.dataset.id)};
@@ -472,7 +499,7 @@ function swStop(save){
 let wdk=null;
 function wizOpen(pr){
   const s=scales.find(x=>x.id===openId);wsid=s.id;wDone=false;wdk=s.id+(pr?NPK:'');
-  const dr=getDraft(wdk);w=dr&&dr.v===3?dr:Object.assign({v:3,step:0,tp:s.tipo,data:iso(new Date())},pr?{pr}:{});ctOn=false;
+  const dr=getDraft(wdk);w=dr&&dr.v===3?dr:Object.assign({v:3,step:0,tp:s.tipo,data:iso(new Date())},pr?{pr}:{},eu()?{e1:eu().nome}:{});ctOn=false;
   wRender();$('#dWiz').showModal();$('#dWiz').scrollTop=0;
 }
 function wSave(){const s=scales.find(x=>x.id===wsid);if(!s||wDone||!w)return;setDraft(wdk,w);if($('#dSc').open&&openId===wsid)renderDetail()}
@@ -685,7 +712,10 @@ function savePdf(s,c){const p=c&&buildPdf(s,c);if(p)saveFile(p.name,p.d.output('
 const SERVIDOR_PADRAO=''; /* opcional: cole aqui o endereço /exec antes de hospedar; assim o executante só digita o código */
 const SRV='calib.srv.v2',CACHE='calib.cache.v2',OUT='calib.fila.v2',SEEN='calib.vistos.v2',DRAFT='calib.rascunho.';
 const ls={get:(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}},del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
-const srv=()=>ls.get(SRV,null);
+/* sessão: { url, code (token do login), user {login,nome,perfil} } */
+const srv=()=>{const k=ls.get(SRV,null);return k&&k.url&&k.code?k:null};
+const srvUrl=()=>{const k=ls.get(SRV,null);return k&&k.url||SERVIDOR_PADRAO};
+const eu=()=>{const k=srv();return k&&k.user||null};
 const getOut=()=>ls.get(OUT,[]),setOut=a=>{if(!ls.set(OUT,a))note('Memória do aparelho cheia: não foi possível guardar a fila de envio.')};
 const getDraft=id=>ls.get(DRAFT+id,null),setDraft=(id,w)=>ls.set(DRAFT+id,w),dropDraft=id=>ls.del(DRAFT+id);
 const enc=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o))));
@@ -718,7 +748,7 @@ function normCal(c){
 function normBase(l){(l||[]).forEach(s=>(s.cal||[]).forEach(normCal));return l||[]}
 function recompute(){scales=getOut().reduce((l,o)=>applyOp(l,o),clone(base))}
 
-const ERR={'codigo-invalido':'Código de acesso inválido. Toque em "Acesso" e reconecte.','troque-codigo-admin':'No script do servidor, troque o CODIGO_ADMIN antes de usar o acesso de administrador.','sem-permissao':'Seu acesso não permite esta ação.','balanca-inexistente':'A balança foi excluída pelo administrador; o registro não foi salvo.','dados-incompletos':'Dados incompletos: o registro não foi salvo.','resposta-invalida':'O servidor respondeu de forma inesperada. Confira o endereço e se a implantação está liberada para "Qualquer pessoa".'};
+const ERR={'codigo-invalido':'Sua sessão terminou ou o acesso foi alterado. Entre de novo com login e senha.','login-invalido':'Login ou senha incorretos.','login-bloqueado':'Muitas tentativas erradas. Aguarde 10 minutos e tente de novo.','login-em-uso':'Já existe um usuário com esse login.','login-formato':'O login deve ter de 2 a 40 letras, números, ponto, hífen ou @, sem espaços.','senha-curta':'A senha deve ter pelo menos 4 caracteres.','senha-atual':'A senha atual não confere.','proprio-admin':'Você não pode tirar o seu próprio acesso de administrador nem desativar a si mesmo.','usuario-inexistente':'Usuário não encontrado.','troque-codigo-admin':'No script do servidor, troque o CODIGO_ADMIN antes de usar o acesso de administrador.','sem-permissao':'Seu acesso não permite esta ação.','balanca-inexistente':'A balança foi excluída pelo administrador; o registro não foi salvo.','dados-incompletos':'Dados incompletos: o registro não foi salvo.','resposta-invalida':'O servidor respondeu de forma inesperada. Confira o endereço e se a implantação está liberada para "Qualquer pessoa".'};
 const errMsg=e=>ERR[e&&e.code]||('Erro no servidor: '+(e&&e.code||'desconhecido'));
 const AUTH=['codigo-invalido','troque-codigo-admin','resposta-invalida'];
 
@@ -729,6 +759,7 @@ async function api(action,data,k){
   try{r=await fetch(k.url,{method:'POST',body:JSON.stringify(Object.assign({},data,{action,code:k.code})),signal:ac.signal})}catch(e){throw{net:true}}finally{clearTimeout(tm)}
   let j;try{j=await r.json()}catch(e){throw{code:'resposta-invalida'}}
   if(j.role)setRole(j.role);
+  if(j.user){const s=ls.get(SRV,null);if(s&&s.code===k.code&&JSON.stringify(s.user)!==JSON.stringify(j.user)){s.user=j.user;ls.set(SRV,s)}}
   if(!j.ok)throw{code:j.erro||'erro'};
   return j;
 }
@@ -743,14 +774,14 @@ function sync(){
       try{done[o.oid]={ok:true,r:await api(o.action,o.data)}}
       catch(e){
         if(e.net){stop='net';break}
-        if(AUTH.includes(e.code)){stop='auth';note(errMsg(e));break}
+        if(AUTH.includes(e.code)){stop='auth';note(errMsg(e));if(e.code==='codigo-invalido')sair();break}
         done[o.oid]={ok:false,e};note(errMsg(e));
       }
       setOut(getOut().filter(x=>x.oid!==o.oid));
     }
     if(!stop){
       try{const j=await api('list');base=normBase(j.scales);lastSync=Date.now();novidades()}
-      catch(e){if(e.net)stop='net';else note(errMsg(e))}
+      catch(e){if(e.net)stop='net';else{note(errMsg(e));if(e.code==='codigo-invalido')sair()}}
     }
     if(stop==='net'&&getOut().length)ls.set('calib.offq',1);
     else if(!stop&&!getOut().length&&ls.get('calib.offq',0)){ls.del('calib.offq');note('Registros guardados no aparelho foram enviados ao servidor.')}
@@ -784,7 +815,7 @@ function setSync(busy){
   const b=$('#sync');if(!b)return;const k=srv(),n=getOut().length;
   if(!k){b.hidden=true;return}
   b.hidden=false;b.className='sync'+(netOk===false?' off':n?' pend':'');
-  b.innerHTML=`<i></i>${busy?'Sincronizando…':(netOk===false?'Sem conexão':'Online')+(lastSync?' · atualizado às '+hora(lastSync):'')}${n?' · '+n+' aguardando envio':''} · ${role==='admin'?'Administrador':role==='exec'?'Executante':''}`;
+  b.innerHTML=`<i></i>${busy?'Sincronizando…':(netOk===false?'Sem conexão':'Online')+(lastSync?' · atualizado às '+hora(lastSync):'')}${n?' · '+n+' aguardando envio':''} · ${eu()?esc(eu().nome)+' · ':''}${role==='admin'?'Administrador':role==='exec'?'Executante':''}`;
 }
 
 /* e-mail do relatório (o servidor envia) */
@@ -809,36 +840,72 @@ function addCal(s,c){marcarVisto(c.id);return op('addCal',Object.assign({balanca
 const msgEnvio=r=>({ok:'Calibração registrada no servidor. O PDF segue para o e-mail do inspetor.',fila:'Sem conexão: a calibração ficou guardada no aparelho e será enviada quando a internet voltar.',erro:'Não foi possível registrar no servidor.','sem-config':'Aparelho não conectado ao servidor.'}[r]||'');
 
 /* tela de conexão */
-function openCfg(){const f=$('#fCfg'),k=srv();f.url.value=k&&k.url||SERVIDOR_PADRAO;f.code.value='';$('#cfgMsg').textContent='';$('#dCfg').showModal()}
+function openCfg(){if($('#dCfg').open)return;const f=$('#fCfg'),u=eu()||(ls.get(SRV,null)||{}).user;f.reset();f.url.value=srvUrl();if(u)f.login.value=u.login;$('#cfgUrl').open=!f.url.value;$('#cfgMsg').textContent='';$('#dCfg').showModal();(u?f.senha:f.login).focus()}
+/* sessão encerrada no servidor (senha trocada, usuário desativado, prazo vencido): pede o login de novo, mantendo os dados do aparelho */
+function sair(){const k=ls.get(SRV,null);if(k){delete k.code;ls.set(SRV,k)}setRole(null);persist();render();setSync(false);openCfg()}
 $('#fCfg').onsubmit=async e=>{
-  e.preventDefault();const f=e.target,k={url:f.url.value.trim(),code:f.code.value.trim()},m=$('#cfgMsg');
-  if(!/^https?:\/\//.test(k.url)){m.textContent='Informe o endereço completo, começando com https://';return}
-  m.textContent='Conectando…';
+  e.preventDefault();const f=e.target,url=f.url.value.trim(),m=$('#cfgMsg');
+  if(!/^https?:\/\//.test(url)){$('#cfgUrl').open=true;m.textContent='Informe o endereço completo do servidor, começando com https://';return}
+  m.textContent='Entrando…';
   try{
+    const r=await api('login',{login:f.login.value.trim(),senha:f.senha.value},{url,code:''});
+    const k={url,code:r.token,user:r.user};
     const j=await api('list',{},k);j.scales=normBase(j.scales);
-    const old=srv();if(old&&old.url!==k.url){ls.del(SEEN)}
-    ls.set(SRV,k);base=j.scales||[];lastSync=Date.now();netOk=true;ls.set(SEEN,null);novidades();recompute();persist();
-    $('#dCfg').close();render();setSync(false);note('Conectado como '+(role==='admin'?'administrador':'executante')+'.');
+    ls.set(SRV,k);setRole(r.role);base=j.scales||[];lastSync=Date.now();netOk=true;ls.set(SEEN,null);novidades();recompute();persist();
+    $('#dCfg').close();render();setSync(false);note('Olá, '+r.user.nome+'. Você entrou como '+(r.role==='admin'?'administrador':'executante')+'.');
     if(getOut().length)sync();
-  }catch(x){m.textContent=x.net?'Sem conexão com o servidor. Verifique a internet e o endereço.':errMsg(x)}
+  }catch(x){m.textContent=x.net?'Sem conexão com o servidor. Verifique a internet e o endereço.':x.code==='codigo-invalido'?'O servidor ainda não foi atualizado para login e senha.':errMsg(x)}
 };
 $('#dCfg').addEventListener('close',()=>{if(!srv())setTimeout(()=>{if(!srv()&&!$('#dCfg').open)$('#dCfg').showModal()},50)});
+$('#fCfg').senha.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('#fCfg').requestSubmit()}});
 
 /* painel de acesso */
 function renderAcc(msg){
   const n=getOut().length,adm=role==='admin',old=(ls.get('calib.balancas.v1',[])||[]).length;
   $('#accBody').innerHTML=`<div class="sh"><h2>Acesso</h2><button type="button" class="x" data-close aria-label="Fechar">×</button></div>
-  <div class="res"><span>Perfil: <b>${adm?'Administrador':role==='exec'?'Executante':'-'}</b></span><span>${netOk===false?'Sem conexão com o servidor':'Conectado ao servidor'}${lastSync?' · atualizado às '+hora(lastSync):''}</span><span>${n?n+' registro(s) aguardando envio':'Nada aguardando envio'}</span></div>
+  <div class="res">${eu()?`<span>Usuário: <b>${esc(eu().nome)}</b> (${esc(eu().login)})</span>`:''}<span>Perfil: <b>${adm?'Administrador':role==='exec'?'Executante':'-'}</b></span><span>${netOk===false?'Sem conexão com o servidor':'Conectado ao servidor'}${lastSync?' · atualizado às '+hora(lastSync):''}</span><span>${n?n+' registro(s) aguardando envio':'Nada aguardando envio'}</span></div>
   <button class="btn pri" type="button" data-a="sync">Sincronizar agora</button>
-  ${adm?`<h3>Administração</h3><p class="small mut">Mande o link do executante para o time. Ao abrir, o app já fica conectado com acesso de executante.</p>
-  <button class="btn" type="button" data-a="lexec">Enviar link do executante</button>
-  <button class="btn" type="button" data-a="ladm">Copiar meu link de administrador</button>
+  <button class="btn" type="button" data-a="senha">Trocar minha senha</button>
+  ${adm?`<h3>Executantes</h3><p class="small mut">Cadastre e edite quem pode usar o app. Cada pessoa entra com o próprio login e senha.</p>
+  <ul class="ul" id="accUsers"><li class="small mut">Carregando…</li></ul>
+  <button class="btn" type="button" data-a="unew">Cadastrar executante</button>
+  <h3>Administração</h3><p class="small mut">Mande o link do app para o time. Ao abrir, a pessoa só precisa digitar o login e a senha.</p>
+  <button class="btn" type="button" data-a="lexec">Enviar link do app</button>
   <button class="btn" type="button" data-a="sheet">Abrir planilha de dados</button>
   <button class="btn" type="button" data-a="mail">Enviar e-mail de teste</button>
   ${old?`<button class="btn" type="button" data-a="mig">Enviar ${old} balança(s) salvas neste aparelho</button>`:''}`:''}
   <p class="small" id="accMsg">${msg?esc(msg):''}</p>
-  <button class="btn" type="button" data-a="out">Desconectar este aparelho</button>`;
+  <button class="btn" type="button" data-a="out">Sair (desconectar este aparelho)</button>`;
+  if(adm)loadUsers();
 }
+let users=[];
+const uRow=u=>`<li class="${u.ativo?'':'off'}"><span><b>${esc(u.nome)}</b><br><span class="small mut">${esc(u.login)} · ${u.perfil==='admin'?'Administrador':'Executante'}${u.matricula?' · Mat. '+esc(u.matricula):''}${u.ativo?'':' · inativo'}</span></span><button class="btn" type="button" data-a="uedit" data-u="${esc(u.login)}">Editar</button></li>`;
+function paintUsers(){const l=$('#accUsers');if(l)l.innerHTML=users.length?users.slice().sort((a,b)=>(b.ativo-a.ativo)||a.nome.localeCompare(b.nome)).map(uRow).join(''):'<li class="small mut">Nenhum usuário cadastrado.</li>'}
+async function loadUsers(){try{users=(await api('users')).users||[];paintUsers()}catch(x){const l=$('#accUsers');if(l)l.innerHTML=`<li class="small mut">${x.net?'Sem conexão: a lista de executantes precisa de internet.':esc(errMsg(x))}</li>`}}
+let uOrig=null;
+function openUser(u){
+  const f=$('#fUser');f.reset();uOrig=u?u.login:null;$('#userMsg').textContent='';
+  $('#hUser').textContent=u?'Editar '+(u.perfil==='admin'?'usuário':'executante'):'Cadastrar executante';
+  $('#lSenha').textContent=u?'Nova senha (deixe em branco para manter a atual)':'Senha (mínimo 4 caracteres)';f.senha.required=!u;
+  if(u){f.nome.value=u.nome;f.login.value=u.login;f.matricula.value=u.matricula||'';f.telefone.value=u.telefone||'';f.perfil.value=u.perfil;f.ativo.checked=u.ativo}
+  $('#dUser').showModal();f.nome.focus();
+}
+$('#fUser').onsubmit=async e=>{
+  e.preventDefault();const f=e.target,m=$('#userMsg'),b=f.querySelector('[type=submit]');
+  const user={nome:f.nome.value.trim(),login:f.login.value.trim(),matricula:f.matricula.value.trim(),telefone:f.telefone.value.trim(),perfil:f.perfil.value,ativo:f.ativo.checked,senha:f.senha.value};
+  if(user.senha&&user.senha.length<4){m.textContent=ERR['senha-curta'];return}
+  b.disabled=true;m.textContent='';
+  try{const j=await api('saveUser',{orig:uOrig,user});users=j.users||[];paintUsers();$('#dUser').close();const am=$('#accMsg');if(am)am.textContent=(uOrig?'Dados de ':'Cadastrado: ')+user.nome+(uOrig?' atualizados.':'. Passe o login e a senha para a pessoa.')}
+  catch(x){m.textContent=x.net?'Sem conexão com o servidor.':errMsg(x)}
+  finally{b.disabled=false}
+};
+$('#fSenha').onsubmit=async e=>{
+  e.preventDefault();const f=e.target,m=$('#senhaMsg');
+  if(f.nova.value!==f.nova2.value){m.textContent='As duas senhas novas não são iguais.';return}
+  m.textContent='Salvando…';
+  try{const j=await api('senha',{atual:f.atual.value,nova:f.nova.value});const k=ls.get(SRV,null);k.code=j.token;ls.set(SRV,k);$('#dSenha').close();note('Senha alterada.')}
+  catch(x){m.textContent=x.net?'Sem conexão com o servidor.':errMsg(x)}
+};
 async function partilhar(titulo,link){
   if(navigator.share){try{await navigator.share({title:titulo,text:titulo+'\n'+link});return 'Link enviado.'}catch(e){if(e&&e.name==='AbortError')return ''}}
   try{await navigator.clipboard.writeText(link);return 'Link copiado. Cole no WhatsApp ou e-mail.'}catch(e){prompt('Copie o link:',link);return ''}
@@ -846,11 +913,13 @@ async function partilhar(titulo,link){
 $('#accBtn').onclick=()=>{renderAcc();$('#dAcc').showModal()};
 $('#accBody').addEventListener('click',async e=>{
   const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,k=srv(),M=t=>{const m=$('#accMsg');if(m)m.textContent=t};
-  const link=code=>location.origin+location.pathname+'#cfg='+enc({url:k.url,code});
+  const link=()=>location.origin+location.pathname+'#cfg='+enc({url:k.url});
   try{
     if(a==='sync'){M('Sincronizando…');await sync();renderAcc(netOk?'Sincronizado.':'Sem conexão com o servidor.')}
-    else if(a==='lexec'){const j=await api('execLink');M(await partilhar('Acesso do executante - Calibração de balanças',link(j.codigoExec)))}
-    else if(a==='ladm'){try{await navigator.clipboard.writeText(link(k.code));M('Link de administrador copiado. Não compartilhe: ele dá acesso total.')}catch(x){prompt('Seu link de administrador (não compartilhe):',link(k.code))}}
+    else if(a==='lexec'){M(await partilhar('App de calibração de balanças (entre com o seu login e senha)',link()))}
+    else if(a==='senha'){$('#fSenha').reset();$('#senhaMsg').textContent='';$('#dSenha').showModal()}
+    else if(a==='unew')openUser(null);
+    else if(a==='uedit')openUser(users.find(u=>u.login===b.dataset.u));
     else if(a==='sheet'){const j=await api('info');window.open(j.planilha,'_blank','noopener')}
     else if(a==='mail'){
       if(!window.jspdf){M('A biblioteca de PDF não carregou. Verifique a internet.');return}
@@ -864,8 +933,8 @@ $('#accBody').addEventListener('click',async e=>{
     }
     else if(a==='out'){
       const n=getOut().length;
-      if(!confirm(n?'Há '+n+' registro(s) ainda não enviados, que serão perdidos. Desconectar mesmo assim?':'Desconectar este aparelho do servidor?'))return;
-      [SRV,CACHE,OUT,SEEN].forEach(ls.del);base=[];setRole(null);lastSync=null;netOk=null;recompute();$('#dAcc').close();cat=null;render();setSync(false);openCfg();
+      if(!confirm(n?'Há '+n+' registro(s) ainda não enviados, que serão perdidos. Sair mesmo assim?':'Sair e desconectar este aparelho?'))return;
+      const url=srvUrl();[SRV,CACHE,OUT,SEEN].forEach(ls.del);if(url)ls.set(SRV,{url});base=[];setRole(null);lastSync=null;netOk=null;recompute();$('#dAcc').close();cat=null;render();setSync(false);openCfg();
     }
   }catch(x){M(x.net?'Sem conexão com o servidor.':errMsg(x))}
 });
@@ -897,7 +966,7 @@ $('#rsBtn').onclick=()=>$('#rsFile').click();
 $('#rsFile').onchange=async e=>{
   const f=e.target.files[0];e.target.value='';if(!f)return;
   let j;try{j=JSON.parse(await f.text());if(!Array.isArray(j.scales))throw 0}catch(x){note('Arquivo de backup inválido.');return}
-  if(confirm('Enviar ao servidor as '+j.scales.length+' balança(s) do backup? Itens que já existem não são duplicados.'))op('import',{scales:j.scales}).then(r=>note(r==='ok'?'Backup enviado ao servidor.':msgEnvio(r)));
+  if(srv()&&confirm('Enviar ao servidor as '+j.scales.length+' balança(s) do backup? Itens que já existem não são duplicados.'))op('import',{scales:j.scales}).then(r=>note(r==='ok'?'Backup enviado ao servidor.':msgEnvio(r)));
 };
 document.addEventListener('submit',e=>{
   if(unlocked||e.target.id==='fPw')return;
@@ -920,7 +989,7 @@ setInterval(render,36e5);
   const c=ls.get(CACHE,null);if(c){base=normBase(c.base);setRole(c.role);lastSync=c.lastSync||null}
   if(location.hash.indexOf('#cfg=')===0){
     try{const k=JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(5)))));
-      if(k.url&&k.code){const old=srv();if(old&&old.url!==k.url){base=[];ls.del(CACHE);ls.del(SEEN)}ls.set(SRV,{url:k.url,code:k.code});if(!old||old.code!==k.code)setRole(null)}}catch(e){}
+      if(k.url){const old=ls.get(SRV,null);if(!old||old.url!==k.url){if(old){base=[];ls.del(CACHE);ls.del(SEEN)}ls.set(SRV,{url:k.url});setRole(null)}}}catch(e){}
     history.replaceState(null,'',location.pathname+location.search);
   }
   recompute();render();setSync(false);
