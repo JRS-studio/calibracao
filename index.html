@@ -177,7 +177,7 @@ ul.h li:first-child{border-top:0}
       <div id="dChart"></div>
     </div>
     <div class="box" id="bWiz" hidden><h3>Calibração guiada</h3><p class="mut small">Passo a passo com cálculo automático e relatório em PDF.</p><div class="wb" style="margin-top:10px"><button class="btn pri" id="bWizGo"></button><button class="btn" id="bWizDel" hidden>Descartar</button></div></div>
-    <div class="box" id="bNp" hidden><h3>Novo procedimento</h3><p class="mut small">Erro inicial pelo peso totalizado no Input Belt (balança em volumétrico, com os pesos padrão).</p><div class="wb" style="margin-top:10px"><button class="btn pri" id="bNpGo"></button><button class="btn" id="bNpDel" hidden>Descartar</button></div></div>
+    <div class="box" id="bNp" hidden><h3>Novo procedimento</h3><p class="mut small">Erro inicial pelo peso totalizado no Check weight (balança em volumétrico, com os pesos padrão).</p><div class="wb" style="margin-top:10px"><button class="btn pri" id="bNpGo"></button><button class="btn" id="bNpDel" hidden>Descartar</button></div></div>
     <div class="box"><h3>Pendências</h3>
       <form id="fPend" class="f">
         <label class="w">Pendências mecânicas<textarea id="pm" maxlength="800"></textarea></label>
@@ -393,13 +393,13 @@ const CK=['Balança voltada para gravimétrico','Teclado desabilitado','Pesos gu
 const WS={
   flu:[{id:'dados',t:'Dados iniciais',f:['os','e1','e2','b04','c02','c05','c08','d02','d06','cor']},{id:'ei',t:'Erro inicial',f:['t1']},{id:'vol',t:'Volumétrico',f:['tv1','tv2','tv3']},{id:'belt',t:'Input Belt',f:['d06n']},{id:'tara',t:'Tara',f:['k1','k2']},{id:'chk',t:'Check weight',f:['d02n']},{id:'ef',t:'Erro final',f:['t2']},{id:'fim',t:'Encerramento',f:[]}],
   dos:[{id:'dados',t:'Dados iniciais',f:['os','e1','e2','b04','c02','c05','c08','d02','d06','cor']},{id:'ei',t:'Erro inicial',f:['p1','s1','p2','s2']},{id:'vol',t:'Volumétrico',f:['tv1','tv2','tv3']},{id:'belt',t:'Input Belt',f:['d06n']},{id:'tara',t:'Tara',f:['k1','k2']},{id:'chk',t:'Check weight',f:['d02n']},{id:'ef',t:'Erro final',f:['p3','s3','p4','s4']},{id:'fim',t:'Encerramento',f:[]}]};
-/* Novo procedimento: coleta igual + velocidade nominal; erro inicial pelo peso totalizado no Input Belt */
+/* Novo procedimento: coleta igual + velocidade nominal; erro inicial pelo peso totalizado no Check weight */
 const NPK='.np';
 const WSN={};['flu','dos'].forEach(tp=>{const f=WS[tp][0].f.slice();f.splice(f.indexOf('b04')+1,0,'vn');WSN[tp]=[{id:'dados',t:'Coleta de dados',f},{id:'nei',t:'Erro inicial',f:['tot']},{id:'fim',t:'Encerramento',f:[]}]});
 const wsL=w=>w.pr==='np'?WSN[w.tp]:WS[w.tp];
 const WI={
   dados:{flu:'Informe os parâmetros atuais do módulo (coleta de parâmetros) e o tamanho da correia. Se não souber o tamanho, toque em “Calcular tamanho” para medir a correia agora.',dos:'Informe os parâmetros atuais do módulo (coleta de parâmetros) e o tamanho da correia, medido de ponta a ponta.'},
-  nei:'COM OS PESOS PADRÃO e a balança em VOLUMÉTRICO. Faça o pedido da capacidade nominal e realize o Input Belt. Informe o peso totalizado. Não é preciso aceitar nem atualizar o fator de correção.',
+  nei:'COM OS PESOS PADRÃO e a balança em VOLUMÉTRICO. Faça o pedido da capacidade nominal e realize o Check weight. Informe o peso totalizado. Não é preciso aceitar nem atualizar o fator de correção.',
   ei:{flu:'COM OS PESOS. Zere o totalizador da balança e cronometre o tempo até o totalizador indicar o valor em destaque abaixo. Informe o tempo encontrado.',dos:'COM OS PESOS. Afira o tempo de volta e informe o pedido e o tempo de volta de cada linha.'},
   vol:{flu:'Passe a balança para volumétrico e habilite o teclado. Aferir o tempo de volta e informe abaixo.',dos:'Passe a balança para volumétrico e habilite o teclado, fazer o pedido meio de faixa. Aferir o tempo de volta e informe abaixo'},
   belt:{flu:'Faça o Input Belt no módulo e informe o novo valor de D-06 (pulsos por volta). Digite no módulo o novo B-04 calculado abaixo.',dos:'SEM OS PESOS. Faça o Input Belt no módulo e informe o novo valor de D-06 (pulsos por volta). Digite no módulo o novo B-04 calculado abaixo.'},
@@ -611,7 +611,7 @@ function buildPdf(s,c){
   }
   if(full){
   H('Coleta de parâmetros');R('B-04 - Pulsos por metro',r.b04);if(r.pr==='np')R('Velocidade nominal (m/s)',r.vn);R('C-02 - Tempo de volta (s)',r.c02);R('C-05 - Comprimento da mesa (m)',r.c05);R('C-08 - Peso padrão (kg)',r.c08);R('D-02 - Fator de correção',r.d02);R('D-06 - Pulsos por volta',r.d06);if(pn(r.cor)>0){R('Tamanho da correia'+(r.tp==='flu'?(r.ctu?' (medido)':' (informado)'):''),fmt(pn(r.cor),4)+' m');if(r.ctu&&pn(r.ctm)>0){R('Medição - distância marcada',fmt(pn(r.ctm))+' m em '+r.ctd+' s');R('Medição - uma volta completa',r.ctv+' s')}}else R('Tamanho da correia (D-06 / B-04)',fmt(x.cor!=null?x.cor:pn(r.cor),4)+' m');
-  if(r.pr==='np'){H('Erro inicial');R('Condição','Volumétrico, com os pesos padrão, pedido da capacidade nominal, Input Belt');R('Total calculado',fmt(x.tc!=null?x.tc:pn(r.vn)*pn(r.c08)*pn(r.c02)/pn(r.c05),3)+' kg');R('Peso totalizado',fmt(pn(r.tot),3)+' kg');R('Erro inicial',fmt(c.ei)+' %')}else{
+  if(r.pr==='np'){H('Erro inicial');R('Condição','Volumétrico, com os pesos padrão, pedido da capacidade nominal, Check weight');R('Total calculado',fmt(x.tc!=null?x.tc:pn(r.vn)*pn(r.c08)*pn(r.c02)/pn(r.c05),3)+' kg');R('Peso totalizado',fmt(pn(r.tot),3)+' kg');R('Erro inicial',fmt(c.ei)+' %')}else{
   H('Cálculo');R('Velocidade (correia / tempo de volta)',fmt(x.vel!=null?x.vel:pn(r.vel),4)+' m/s');if(!dos)R('Fluxo calculado (1 hora)',fmt(x.Q)+' t/h');
   if(!dos){R('Tempo de 2 voltas',fmt(x.T)+' s');R('Totalização esperada',fmt(x.tons,4)+' t')}
   H('Erro inicial');
