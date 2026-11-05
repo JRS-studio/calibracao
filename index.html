@@ -419,7 +419,7 @@ function calc(w){
     o.f=[1,2,3,4].map(i=>fe(w['s'+i]));o.e=[1,2,3,4].map(i=>er(w['p'+i],w['s'+i]));
     o.ei=(o.e[0]+o.e[1])/2;o.ef=(o.e[2]+o.e[3])/2;
   }else{o.ei=(pn(w.t1)/T-1)*100;o.ef=(pn(w.t2)/T-1)*100}
-  if(w.pr==='np'){o.tc=pn(w.vn)*pn(w.c08)*pn(w.c02)/pn(w.c05);o.ei=(pn(w.tot)-o.tc)/o.tc*100;o.ef=o.ei;o.vc=o.cor/o.tv;o.b04nn=pn(w.b04)*pn(w.vn)/o.vc}
+  if(w.pr==='np'){o.tc=pn(w.vn)*pn(w.c08)*pn(w.c02)/pn(w.c05);o.ei=(pn(w.tot)-o.tc)/o.tc*100;o.ef=o.ei;o.vc=o.cor/o.tv;o.b04nn=(pn(w.vn)/o.vc)*pn(w.b04)}
   return o;
 }
 const SWK=['t1','t2','s1','s2','s3','s4','ctd','ctv'];
@@ -481,7 +481,7 @@ function wLive(){
     if(cu)cu.disabled=!(isFinite(c.ct)&&c.ct>0);
   }
   else if(id==='nvol'){
-    h=c.tvs.length===3?R(`<span>Tempo de volta (média de 3): <b>${fmt(c.tv,3)} s</b></span><span>Velocidade calculada = tamanho da correia ÷ tempo de volta</span><span>${fmt(c.cor,4)} ÷ ${fmt(c.tv,3)} = <b>${fmt(c.vc,4)} m/s</b></span>`)+R(`<span>Novo B-04 = B-04 antiga × velocidade nominal ÷ velocidade calculada</span><span>${fmt(pn(w.b04),4)} × ${fmt(pn(w.vn),4)} ÷ ${fmt(c.vc,4)} = <b class='bn'>${fmt(c.b04nn,4)} pulsos/m</b></span>`):R(`<span>Tempos registrados: <b>${c.tvs.length} de 3</b></span>`);
+    h=c.tvs.length===3?R(`<span>Tempo de volta (média de 3): <b>${fmt(c.tv,3)} s</b></span><span>Velocidade calculada = tamanho da correia ÷ tempo de volta</span><span>${fmt(c.cor,4)} ÷ ${fmt(c.tv,3)} = <b>${fmt(c.vc,4)} m/s</b></span>`)+R(`<span>Novo B-04 = (velocidade antiga ÷ velocidade calculada) × B-04 antiga</span><span>(${fmt(pn(w.vn),4)} ÷ ${fmt(c.vc,4)}) × ${fmt(pn(w.b04),4)} = <b class='bn'>${fmt(c.b04nn,4)} pulsos/m</b></span>`):R(`<span>Tempos registrados: <b>${c.tvs.length} de 3</b></span>`);
   }
   else if(id==='nei'){
     h=R(`<span>Total calculado = (velocidade nominal × peso padrão × tempo de volta) ÷ comprimento da mesa</span><span>(${fmt(pn(w.vn),4)} × ${fmt(pn(w.c08))} × ${fmt(pn(w.c02))}) ÷ ${fmt(pn(w.c05))} = <b class='bn'>${fmt(c.tc,3)} kg</b></span>`);
